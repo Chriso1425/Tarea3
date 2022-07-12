@@ -57,7 +57,8 @@ delitos_oij <-
 
 ```{r}
 delitos_oij %>%
-  datatable(options = list(
+  datatable(colnames = c("Delito", "Fecha", "Víctima", "Edad", "Género", "Provincia", "Cantón"),
+    options = list(
     pageLenght = 10,
     language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
   ))
@@ -136,8 +137,8 @@ grafico_apilado_genero <-
   geom_bar(position = "fill") +
   ggtitle("Proporción de delitos por género") +
   xlab("Delito") +
-  ylab("Proporcion") +
-  labs(fill = "Genero") +
+  ylab("Proporción") +
+  labs(fill = "Género") +
   coord_flip() +
   theme_minimal ()
 ```
