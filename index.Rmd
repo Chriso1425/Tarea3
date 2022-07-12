@@ -72,7 +72,7 @@ grafico_delitos <-
   count(Delito) %>%
   ggplot(aes(x = reorder(Delito, n), y = n)) +
   geom_bar(stat = "identity") +
-  ggtitle("Cantidad de delitos por cada tipo de delito") +
+  ggtitle("Cantidad de delitos por cada delito") +
   xlab("Cantidad de delitos") +
   ylab("Delitos") +
   coord_flip() +
