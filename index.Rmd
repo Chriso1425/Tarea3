@@ -19,6 +19,7 @@ library(plotly)
 library(leaflet)
 library(readxl)
 library(lubridate)
+library(stringi)
 ```
 
 ```{r}
@@ -42,9 +43,104 @@ Column {data-width=550}
 ### Mapa
 
 ```{r}
+cantones <- 
+  cantones %>%
+  mutate(canton_normalizado = tolower(stri_trans_general(canton, id = "Latin-ASCII")))
+```
+
+```{r}
+delitos_oij <-
+  delitos_oij %>%
+  mutate(canton_normalizado = tolower(stri_trans_general(Canton, id = "Latin-ASCII")))
+```
+
+```{r}
+delitos_oij <-
+  delitos_oij %>%
+  mutate(Canton = if_else(Canton == "LEON CORTES", "LEON CORTES CASTRO", Canton)) %>%
+  mutate(Canton = if_else(Canton == "VASQUEZ DE CORONADO", "VAZQUEZ DE CORONADO", Canton))
+```
+
+```{r}
+delitos_oij <-
+  delitos_oij %>%
+  mutate(canton_normalizado = tolower(stri_trans_general(Canton, id = "Latin-ASCII")))
+```
+
+```{r}
+delitos_oij <-
+  delitos_oij %>%
+  left_join(
+    dplyr::select(
+      st_drop_geometry(cantones),
+      cod_canton,
+      canton_normalizado
+    ),
+    by = "canton_normalizado",
+    copy = FALSE,
+    keep = FALSE
+  )
+```
+
+```{r}
+delitos_x_canton <-
+  delitos_oij %>%
+  count(cod_canton, name = "delitos")
+```
+
+```{r}
+cantones_delitos <-
+  cantones %>%
+  left_join(
+    delitos_x_canton,
+    by = "cod_canton",
+    copy = FALSE,
+    keep = FALSE
+  )
+```
+
+```{r}
+colores_cantones_delitos <-
+  colorNumeric(
+    palette = "Reds",
+    domain = cantones_delitos$delitos,
+    na.color = "transparent"
+  )
+```
+
+```{r}
 leaflet() %>%
-  addTiles() %>%
-  addPolygons(data = cantones, weight = 1.0)
+  setView(lng = -84.19452,
+          lat = 9.572735,
+          zoom = 7) %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addPolygons(
+    data = cantones_delitos,
+    fillColor = ~ colores_cantones_delitos(cantones_delitos$delitos),
+    fillOpacity = 0.8,
+    color = "black",
+    stroke = TRUE,
+    weight = 1.0,
+    popup = paste(
+      paste("<strong>Cantón:</strong>",
+            cantones_delitos$canton),
+      paste("<strong>Delitos:</strong>",
+            cantones_delitos$delitos),
+      sep = "<br/>"
+    ),
+    group = "Delitos en cantones"
+  ) %>%
+  addLayersControl(
+    baseGroups = c("OpenStreetMap"),
+    overlayGroups = c("Delitos en cantones")
+  ) %>%
+  addLegend(
+    position = "bottomleft",
+    pal = colores_cantones_delitos,
+    values = cantones_delitos$delitos,
+    group = "Delitos",
+    title = "Cantidad de delitos"
+  )
 ```
 
 ### Tabla
@@ -80,7 +176,7 @@ grafico_delitos <-
 ```
 
 ```{r lectura-grafico-delitos, message=FALSE, echo=FALSE}
-ggplotly(grafico_delitos)
+ggplotly(grafico_delitos) %>% config(locale = "es")
 ```
 
 Column {data-width=450}
@@ -101,7 +197,7 @@ grafico_victima <-
 ```
 
 ```{r lectura-grafico-victimas, message=FALSE, echo=FALSE}
-ggplotly(grafico_victima)
+ggplotly(grafico_victima) %>% config(locale = "es")
 ```
 
 ### Gráfico 3
@@ -125,7 +221,7 @@ grafico_delitos_mes <-
 ```
 
 ```{r lectura-grafico-delitos-mes, message=FALSE, echo=FALSE}
-ggplotly(grafico_delitos_mes)
+ggplotly(grafico_delitos_mes) %>% config(locale = "es")
 ```
 
 ### Gráfico 4
