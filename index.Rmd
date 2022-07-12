@@ -1,0 +1,148 @@
+---
+title: "Tarea 3"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+```{r carga-paquetes, include=FALSE}
+library(dplyr)
+library(sf)
+library(DT)
+library(ggplot2)
+library(plotly)
+library(leaflet)
+library(readxl)
+library(lubridate)
+```
+
+```{r}
+cantones <-
+  st_read(dsn = "cantones_simplificados.geojson", quiet = TRUE) %>%
+  st_transform(4326)
+```
+
+```{r}
+delitos_oij <-
+  readxl::read_excel("estadisticaspoliciales2021.xls")
+```
+
+```{r}
+delitos_oij$Fecha <- as.Date(delitos_oij$Fecha, format("%d/%m/%Y"))
+```
+
+Column {data-width=550}
+-----------------------------------------------------------------------
+
+### Mapa
+
+```{r}
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(data = cantones, weight = 1.0)
+```
+
+### Tabla
+
+```{r}
+delitos_oij <-
+  delitos_oij %>%
+  dplyr::select(Delito, Fecha, Victima, Edad, Genero, Provincia, Canton)
+```
+
+```{r}
+delitos_oij %>%
+  datatable(options = list(
+    pageLenght = 10,
+    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+  ))
+```
+
+### Gráfico 1
+
+```{r grafico-delitos, message=FALSE, echo=FALSE}
+grafico_delitos <-
+  delitos_oij %>%
+  count(Delito) %>%
+  ggplot(aes(x = reorder(Delito, n), y = n)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Cantidad de delitos por cada tipo de delito") +
+  xlab("Cantidad de delitos") +
+  ylab("Delitos") +
+  coord_flip() +
+  theme_minimal()
+```
+
+```{r lectura-grafico-delitos, message=FALSE, echo=FALSE}
+ggplotly(grafico_delitos)
+```
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Gráfico 2
+
+```{r grafico-victimas, message=FALSE, echo=FALSE}
+grafico_victima <-
+  delitos_oij %>%
+  count(Victima) %>%
+  ggplot(aes(x = reorder(Victima, n), y = n)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Cantidad de delitos por víctima") +
+  xlab("Víctima") +
+  ylab("Cantidad de delitos") +
+  theme_classic()
+```
+
+```{r lectura-grafico-victimas, message=FALSE, echo=FALSE}
+ggplotly(grafico_victima)
+```
+
+### Gráfico 3
+
+```{r datos-meses, message=FALSE, echo=FALSE}
+meses_delitos <-
+  delitos_oij %>%
+  mutate(Meses = lubridate::month(Fecha, label = TRUE))
+```
+
+```{r grafico-delitos-mes, message=FALSE, echo=FALSE}
+grafico_delitos_mes <-
+  meses_delitos %>%
+  count(Meses) %>%
+  ggplot(aes(x = Meses, y = n)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Cantidad de delitos por mes") +
+  xlab("Mes") +
+  ylab("Cantidad de delitos") +
+  theme_minimal()
+```
+
+```{r lectura-grafico-delitos-mes, message=FALSE, echo=FALSE}
+ggplotly(grafico_delitos_mes)
+```
+
+### Gráfico 4
+
+```{r grafico-apilado-genero, message=FALSE, echo=FALSE}
+grafico_apilado_genero <-
+  delitos_oij %>%
+  ggplot(aes(x = Delito, fill = Genero)) +
+  geom_bar(position = "fill") +
+  ggtitle("Proporción de delitos por género") +
+  xlab("Delito") +
+  ylab("Proporcion") +
+  labs(fill = "Genero") +
+  coord_flip() +
+  theme_minimal ()
+```
+
+```{r}
+ggplotly(grafico_apilado_genero) %>% config(locale = "es")
+```
+
